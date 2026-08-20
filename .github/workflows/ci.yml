@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality and PostgreSQL integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:d845e7f0ac8517b9d9868b6d20379f9688ba3676595e50ca7c0b664964b2a760
+        env:
+          POSTGRES_DB: exitroute_test
+          POSTGRES_USER: exitroute
+          POSTGRES_PASSWORD: exitroute
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U exitroute -d exitroute_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      EXITROUTE_ENVIRONMENT: test
+      EXITROUTE_DATABASE_URL: postgresql+psycopg://exitroute:exitroute@localhost:5432/exitroute_test
+      EXITROUTE_TEST_DATABASE_URL: postgresql+psycopg://exitroute:exitroute@localhost:5432/exitroute_test
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          version: "0.11.3"
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --frozen --extra dev
+      - name: Lint and format
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Type check
+        run: uv run mypy src tests
+      - name: Check generated API contracts
+        run: |
+          uv run python scripts/export_openapi.py --check
+          uv run openapi-spec-validator openapi.yaml
+          uv run openapi-spec-validator openapi.cloudflare.yaml
+      - name: Test with branch coverage
+        run: uv run pytest --cov --cov-report=xml
+      - name: Check migration drift
+        run: uv run alembic check
+      - name: Audit locked development and runtime environment
+        run: |
+          uv export --quiet --frozen --extra dev --no-emit-project --no-hashes --output-file /tmp/exitroute-audit.txt
+          uv run pip-audit --strict --requirement /tmp/exitroute-audit.txt
+      - name: Build and smoke-test wheel
+        run: |
+          uv build
+          python -m venv /tmp/exitroute-wheel-test
+          /tmp/exitroute-wheel-test/bin/pip install dist/*.whl
+          /tmp/exitroute-wheel-test/bin/python -c "from exitroute.app import create_app; assert create_app().title == 'ExitRoute API'"
+          cd /tmp
+          /tmp/exitroute-wheel-test/bin/exitroute migrate
+      - name: Validate Compose model
+        run: docker compose config --quiet
+
+  container:
+    name: Hardened container build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Run Dockerfile build checks
+        run: docker build --check .
+      - name: Build runtime image
+        run: docker build --pull --tag exitroute-api:ci .
+      - name: Verify runtime identity
+        run: |
+          test "$(docker image inspect exitroute-api:ci --format '{{.Config.User}}')" = "10001:10001"
+          test "$(docker image inspect exitroute-api:ci --format '{{.Config.Healthcheck.Test}}')" != "<nil>"

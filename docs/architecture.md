@@ -1,120 +1,89 @@
 # Architecture
 
-## Decision summary
-
-Start with one typed Python service and one PostgreSQL database. Keep graph
-traversal in the domain layer, store immutable revision documents in JSONB with
-a relational identity/publication envelope, and run scheduled maintenance as a
-CLI command from the same codebase.
+ExitRoute is a provider-neutral modular monolith: one typed application package,
+one PostgreSQL database, and two process roles built from the same immutable
+container. The API serves requests; the worker enforces freshness and drains a
+transactional webhook outbox.
 
 ```mermaid
 flowchart LR
-    A[API clients] -->|HTTPS + API key| B[FastAPI monolith]
-    G[Daily challenge] -->|public projection| B
-    E[Editor / verifier] -->|admin auth| B
-    B --> C[Domain validation + route selection]
-    C --> D[(PostgreSQL)]
-    F[Scheduler] -->|review-due CLI| C
-    B -->|signed events| H[Client webhooks]
+    Client[API clients] -->|HTTPS + scoped key| API[FastAPI API]
+    Player[Daily challenge clients] -->|public, link-free| API
+    Editor[Editors] -->|admin key| API
+    API --> Domain[Graph + workflow domain]
+    Domain --> DB[(PostgreSQL)]
+    Worker[Worker replicas] -->|SKIP LOCKED leases| DB
+    Worker -->|pinned HTTPS + HMAC| Hook[Subscriber webhooks]
 ```
 
-This is a modular monolith: HTTP, editorial workflow, traversal, publication,
-and webhook modules have explicit boundaries but deploy together.
+## Boundaries
 
-## Components
+The `domain` package has no HTTP or database imports. It owns graph structure,
+semantic edge rules, deterministic Dijkstra selection, friction scoring,
+canonical fingerprints, ETags, cursor signatures, credential digests, and
+webhook network validation.
 
-### HTTP/API layer
+The `services` package owns transactions and state changes. Publication locks
+the logical route, verifies two independent sessions, supersedes the old
+revision, changes the current pointer, appends change/audit events, and creates
+all matching webhook deliveries in one commit.
 
-- FastAPI routers and Pydantic input/output models
-- API-key and admin authentication dependencies
-- RFC 9457 problem responses
-- Pagination, ETag, request ID, and rate-limit headers
-- Generated OpenAPI document treated as a compatibility artifact
+The `api` package translates typed requests into service calls and returns RFC
+9457-style problem documents with stable machine codes. Request bodies, query
+parameters, headers, and responses generate the canonical OpenAPI document.
 
-### Domain layer
+Alembic owns schema evolution. PostgreSQL checks reject invalid envelopes;
+triggers prevent updates to published content and any update/delete of audit or
+change events. Integration tests exercise these database controls directly.
 
-- Graph structural and semantic validation
-- Deterministic lowest-effort route selection
-- Versioned friction calculation
-- Draft/publication state machine
-- Challenge projection that removes live URLs and private evidence
+## Core paths
 
-The domain layer must not import FastAPI or database session types.
+### Read
 
-### Persistence layer
+1. Authenticate a keyed digest and atomically consume the client's minute window.
+2. Find the active service variant and its current published revision.
+3. Mark an overdue verified revision stale before representing it.
+4. Build an ETag from content fingerprint plus publication/trust status version.
+5. Return `304` on a matching `If-None-Match`; otherwise return the immutable graph.
 
-- SQLAlchemy mappings and repositories
-- Alembic migrations
-- Relational tables for identity, variants, revisions, observations, audit
-  events, clients, and webhook deliveries
-- JSONB for the bounded graph document associated with an immutable revision
+### Publish
 
-### Scheduled work
+1. Lock the draft and logical route.
+2. Require two passed sessions with distinct verifier and environment identities.
+3. Validate the configured review window.
+4. Supersede the previous revision without changing its content.
+5. Publish the draft, update the current pointer, append audit/change records,
+   and create webhook outbox rows atomically.
 
-Use a command such as `python -m exitroute.jobs.mark_stale` under the hosting
-platform's scheduler. Webhook delivery can begin in-process after transaction
-commit with durable delivery rows. Add a real queue only after measurement
-shows that this causes latency or reliability failures.
+### Deliver
 
-## Core request path
+1. Worker replicas lease due rows with `FOR UPDATE SKIP LOCKED` and an expiry.
+2. Resolve the hostname again and reject any non-global result.
+3. Connect to one vetted IP, retain the original hostname for HTTP Host and TLS SNI,
+   disable redirects and environment proxies, and sign the exact canonical body.
+4. Mark 2xx delivered, permanent 4xx dead, or bounded exponential retries for
+   network errors, 408/425/429, and 5xx responses.
 
-1. Normalize service slug, ISO region, platform, and outcome.
-2. Select the current published route variant.
-3. Evaluate freshness; do not silently label overdue data verified.
-4. Load the immutable revision payload.
-5. Return its precomputed best route and friction metrics with an ETag based on
-   the revision fingerprint.
-6. Emit an audit/usage event without personal request contents.
+## Deployment model
 
-Best routes and friction are computed and validated on publication, not on
-every read. A runtime recomputation in tests guards against stored-result drift.
+The container runs as UID/GID 10001, has no Linux capabilities, supports a
+read-only root filesystem, and writes only to PostgreSQL. Compose provides a
+development topology. Production operators should use redundant API and worker
+replicas, managed PostgreSQL or equivalent backup/replication, a TLS ingress,
+central log collection, and secret injection supplied by their platform.
 
-## Deployment shape
+No API process performs migrations at startup. A separate, idempotent migration
+job must succeed before new application instances become ready.
 
-Initial environments:
+## Scaling triggers
 
-- Local: application process plus PostgreSQL container
-- CI: isolated PostgreSQL service per job
-- Staging: one application instance and managed PostgreSQL
-- Production pilot: at least two application instances and managed PostgreSQL
+Do not split the system on anticipation alone.
 
-Hosting is deliberately undecided until the pilot reveals traffic, region, and
-operational constraints. The container and environment contract should remain
-provider-neutral.
-
-## Security and privacy boundaries
-
-- Never accept service credentials, session cookies, member IDs, payment data,
-  or free-form account narratives.
-- Observation payloads use enumerated semantic change types and bounded text.
-- Store API keys as slow hashes or keyed digests; show plaintext only once.
-- Separate admin identity from API-client identity and audit all publication actions.
-- Sign webhooks, include timestamps, and reject replays outside a bounded window.
-- Apply database least privilege and keep backups encrypted.
-- Do not place raw screenshots in the MVP. If later required, design a separate
-  quarantine, redaction, retention, and access-control system first.
-
-## Scaling triggers—not guesses
-
-Add infrastructure only when a measured trigger occurs:
-
-| Addition | Trigger |
+| Addition | Evidence required |
 |---|---|
-| Redis cache | PostgreSQL-backed reads miss the latency objective under representative load |
-| Worker queue | webhook/scheduled work causes request latency or lost work despite durable rows |
-| Object storage | approved evidence policy requires media and legal/privacy review is complete |
-| Search service | service discovery cannot meet relevance/latency goals with PostgreSQL indexes |
-| Separate services | teams or failure domains cannot deploy safely as one unit |
-| Graph database | required graph queries exceed bounded per-revision traversal and PostgreSQL evidence proves the bottleneck |
-
-## Architecture evidence
-
-FastAPI documents native OpenAPI/JSON Schema generation and typed nested-model
-validation. PostgreSQL documents JSONB operators and GIN indexing. Those
-capabilities support this plan; they do not prove product demand or data
-freshness, which are handled by separate pilot gates.
-
-- [FastAPI features](https://fastapi.tiangolo.com/features/)
-- [PostgreSQL JSONB types and indexing](https://www.postgresql.org/docs/current/datatype-json.html)
-- [OpenAPI Specification](https://spec.openapis.org/oas/latest.html)
-- [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html)
+| Redis/cache tier | PostgreSQL read path misses the latency objective after indexing and HTTP cache validation |
+| Dedicated queue | The transactional outbox cannot meet measured delivery lag or database load objectives |
+| Object storage | A reviewed evidence policy explicitly permits media, with quarantine and deletion controls |
+| Search service | Indexed PostgreSQL discovery misses a measured relevance or latency need |
+| Separate services | Independent teams or failure domains cannot deploy safely from the monolith |
+| Graph database | Bounded in-revision traversal is proven to be the bottleneck by production profiles |

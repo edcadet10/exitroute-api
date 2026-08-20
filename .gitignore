@@ -1,6 +1,8 @@
 __pycache__/
 *.py[cod]
 .coverage
+.coverage.*
+.DS_Store
 .env
 .idea/
 .mypy_cache/
@@ -11,4 +13,5 @@ __pycache__/
 coverage.xml
 dist/
 htmlcov/
+*.log
 *.egg-info/

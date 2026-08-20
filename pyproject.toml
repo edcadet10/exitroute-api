@@ -1,0 +1,96 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "exitroute-api"
+version = "0.1.0"
+description = "A self-hosted API for versioned, verified subscription exit routes"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "ExitRoute contributors" }]
+keywords = ["fastapi", "openapi", "subscriptions", "self-hosted"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Framework :: FastAPI",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.12",
+  "Typing :: Typed",
+]
+dependencies = [
+  "alembic>=1.16,<2",
+  "fastapi>=0.116,<1",
+  "httpx>=0.28,<1",
+  "psycopg[binary]>=3.2,<4",
+  "pydantic-settings>=2.10,<3",
+  "sqlalchemy>=2.0,<3",
+  "typer>=0.16,<1",
+  "uvicorn>=0.52,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  # Preferred backend for Starlette's TestClient; maintained by Pydantic.
+  "httpx2>=2.12,<3",
+  "mypy>=1.17,<2",
+  "openapi-spec-validator>=0.7,<1",
+  "pip-audit>=2.9,<3",
+  "pytest>=9.0.3,<10",
+  "pytest-cov>=6.2,<8",
+  "pyyaml>=6,<7",
+  "ruff>=0.12,<1",
+  "types-pyyaml>=6.0,<7",
+]
+
+[project.scripts]
+exitroute = "exitroute.cli:app"
+exitroute-worker = "exitroute.jobs:app"
+
+[project.urls]
+Homepage = "https://github.com/edcadet10/exitroute-api"
+Repository = "https://github.com/edcadet10/exitroute-api"
+Issues = "https://github.com/edcadet10/exitroute-api/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/exitroute"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"alembic" = "exitroute/alembic"
+"alembic.ini" = "exitroute/alembic.ini"
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+markers = ["integration: requires PostgreSQL"]
+
+[tool.coverage.run]
+branch = true
+source = ["exitroute"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "DTZ", "PT", "RUF", "S", "SIM"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S311"]
+"alembic/**" = ["E501", "N999"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+packages = ["exitroute"]
+
+[[tool.mypy.overrides]]
+module = ["alembic.*"]
+ignore_missing_imports = true

@@ -1,0 +1,31 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze Python
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@67ba681cdcbc95ed0371c210ccf82c4d968ae5eb # v3.37.7
+        with:
+          languages: python
+      - name: Analyze
+        uses: github/codeql-action/analyze@67ba681cdcbc95ed0371c210ccf82c4d968ae5eb # v3.37.7

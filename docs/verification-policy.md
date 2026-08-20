@@ -27,7 +27,7 @@ For each candidate revision:
 2. Traverse the flow without entering real personal information into project records.
 3. Record nodes, choice labels, effects, handoffs, and the cancellation-confirmed state.
 4. Canonicalize and validate the graph; compute best route and friction.
-5. Repeat in an independent session. Prefer a second verifier for the final 25-route set.
+5. Repeat with a distinct verifier in a distinct clean-session environment.
 6. Resolve discrepancies or publish an explicit unavailable/uncertain state.
 7. Record an evidence summary, verifier, timestamp, and next review date privately.
 
@@ -35,13 +35,15 @@ The project must never claim a cancellation succeeded without observing the
 service's own confirmation state. A phone handoff is labeled as a handoff until
 the downstream confirmation is independently verified.
 
-## Confidence states
+## Publication and trust states
 
 - `verified`: two consistent verification sessions and review date not passed
 - `provisional`: one successful session or a documented unresolved variant
 - `stale`: review date passed or credible change report awaiting review
-- `unavailable`: no reproducible cancellation path for the requested variant
-- `withdrawn`: unsafe, incorrect, disputed, or no longer suitable for publication
+- `draft`: editorial revision that is never returned publicly
+- `published`: current public revision; its trust state is separately verified or stale
+- `superseded`: immutable historical revision replaced by a newer publication
+- `withdrawn`: retained for audit but removed from normal discovery
 
 Clients receive the state directly. The API never silently falls back from a
 verified regional/platform variant to a different one.

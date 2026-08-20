@@ -1,7 +1,6 @@
-openapi: 3.1.0
+openapi: 3.0.3
 info:
   title: ExitRoute API
-  summary: Versioned, verified routes for leaving digital services
   description: A self-hosted informational API. It never authenticates to, operates, or stores credentials
     for a consumer account.
   version: 0.1.0
@@ -49,11 +48,10 @@ paths:
         in: query
         required: false
         schema:
-          anyOf:
-          - type: string
-            format: date
-          - type: 'null'
           title: Date
+          type: string
+          format: date
+          nullable: true
       responses:
         '200':
           description: Successful Response
@@ -78,12 +76,11 @@ paths:
         in: query
         required: false
         schema:
-          anyOf:
-          - type: string
-            minLength: 1
-            maxLength: 512
-          - type: 'null'
           title: Cursor
+          type: string
+          minLength: 1
+          maxLength: 512
+          nullable: true
       - name: limit
         in: query
         required: false
@@ -146,10 +143,9 @@ paths:
         in: header
         required: false
         schema:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: If-None-Match
+          type: string
+          nullable: true
       responses:
         '200':
           description: Successful Response
@@ -212,12 +208,11 @@ paths:
         in: query
         required: false
         schema:
-          anyOf:
-          - type: string
-            minLength: 1
-            maxLength: 512
-          - type: 'null'
           title: Cursor
+          type: string
+          minLength: 1
+          maxLength: 512
+          nullable: true
       - name: limit
         in: query
         required: false
@@ -289,10 +284,9 @@ paths:
         in: header
         required: false
         schema:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: If-None-Match
+          type: string
+          nullable: true
       responses:
         '200':
           description: Successful Response
@@ -332,12 +326,11 @@ paths:
         in: query
         required: false
         schema:
-          anyOf:
-          - type: string
-            minLength: 1
-            maxLength: 512
-          - type: 'null'
           title: Cursor
+          type: string
+          minLength: 1
+          maxLength: 512
+          nullable: true
       - name: limit
         in: query
         required: false
@@ -600,12 +593,11 @@ paths:
         in: query
         required: false
         schema:
-          anyOf:
-          - type: string
-            minLength: 1
-            maxLength: 512
-          - type: 'null'
           title: Cursor
+          type: string
+          minLength: 1
+          maxLength: 512
+          nullable: true
       - name: limit
         in: query
         required: false
@@ -1156,12 +1148,11 @@ paths:
         in: query
         required: false
         schema:
-          anyOf:
-          - type: string
-            minLength: 1
-            maxLength: 512
-          - type: 'null'
           title: Cursor
+          type: string
+          minLength: 1
+          maxLength: 512
+          nullable: true
       - name: limit
         in: query
         required: false
@@ -1242,12 +1233,11 @@ components:
           minLength: 2
           title: Name
         rate_limit_per_minute:
-          anyOf:
-          - type: integer
-            maximum: 100000.0
-            minimum: 1.0
-          - type: 'null'
           title: Rate Limit Per Minute
+          type: integer
+          maximum: 100000.0
+          minimum: 1.0
+          nullable: true
       additionalProperties: false
       type: object
       required:
@@ -1266,10 +1256,9 @@ components:
           type: boolean
           title: Active
         rate_limit_per_minute:
-          anyOf:
-          - type: integer
-          - type: 'null'
           title: Rate Limit Per Minute
+          type: integer
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -1301,14 +1290,12 @@ components:
           type: array
           maxItems: 4
           minItems: 1
-          uniqueItems: true
           title: Scopes
         expires_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Expires At
+          type: string
+          format: date-time
+          nullable: true
       additionalProperties: false
       type: object
       required:
@@ -1337,11 +1324,10 @@ components:
           type: array
           title: Scopes
         expires_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Expires At
+          type: string
+          format: date-time
+          nullable: true
         plaintext_key:
           type: string
           title: Plaintext Key
@@ -1378,17 +1364,15 @@ components:
           type: array
           title: Scopes
         expires_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Expires At
+          type: string
+          format: date-time
+          nullable: true
         revoked_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Revoked At
+          type: string
+          format: date-time
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -1466,10 +1450,9 @@ components:
           type: array
           title: Data
         next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Next Cursor
+          type: string
+          nullable: true
       additionalProperties: false
       type: object
       required:
@@ -1564,9 +1547,10 @@ components:
       properties:
         method:
           type: string
-          const: manual_clean_session
           title: Method
           default: manual_clean_session
+          enum:
+          - manual_clean_session
         verification_sessions:
           type: integer
           title: Verification Sessions
@@ -1671,9 +1655,10 @@ components:
           title: Effort Score
         algorithm_version:
           type: string
-          const: friction-v1
           title: Algorithm Version
           default: friction-v1
+          enum:
+          - friction-v1
       additionalProperties: false
       type: object
       required:
@@ -1696,9 +1681,10 @@ components:
       properties:
         status:
           type: string
-          const: ok
           title: Status
           default: ok
+          enum:
+          - ok
       additionalProperties: false
       type: object
       title: Health
@@ -1718,10 +1704,9 @@ components:
           type: array
           title: Data
         next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Next Cursor
+          type: string
+          nullable: true
       additionalProperties: false
       type: object
       required:
@@ -1754,21 +1739,18 @@ components:
           format: date-time
           title: Received At
         moderated_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Moderated At
+          type: string
+          format: date-time
+          nullable: true
         moderated_by:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Moderated By
+          type: string
+          nullable: true
         decision_reason:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Decision Reason
+          type: string
+          nullable: true
       additionalProperties: false
       type: object
       required:
@@ -1790,11 +1772,10 @@ components:
           pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
           title: Service Slug
         observed_revision:
-          anyOf:
-          - type: integer
-            minimum: 1.0
-          - type: 'null'
           title: Observed Revision
+          type: integer
+          minimum: 1.0
+          nullable: true
         outcome:
           $ref: '#/components/schemas/Outcome'
           default: cancel_subscription
@@ -1821,14 +1802,12 @@ components:
           type: array
           maxItems: 10
           minItems: 1
-          uniqueItems: true
           title: Change Types
         note:
-          anyOf:
-          - type: string
-            maxLength: 500
-          - type: 'null'
           title: Note
+          type: string
+          maxLength: 500
+          nullable: true
       additionalProperties: false
       type: object
       required:
@@ -1929,14 +1908,16 @@ components:
       properties:
         status:
           type: string
-          const: ready
           title: Status
           default: ready
+          enum:
+          - ready
         database:
           type: string
-          const: ok
           title: Database
           default: ok
+          enum:
+          - ok
       additionalProperties: false
       type: object
       title: Ready
@@ -2022,10 +2003,9 @@ components:
           type: array
           title: Data
         next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Next Cursor
+          type: string
+          nullable: true
       additionalProperties: false
       type: object
       required:
@@ -2049,23 +2029,20 @@ components:
           type: integer
           title: Status Version
         verified_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Verified At
+          type: string
+          format: date-time
+          nullable: true
         review_due_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Review Due At
+          type: string
+          format: date-time
+          nullable: true
         published_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Published At
+          type: string
+          format: date-time
+          nullable: true
       additionalProperties: false
       type: object
       required:
@@ -2092,17 +2069,15 @@ components:
         status:
           $ref: '#/components/schemas/TrustState'
         verified_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Verified At
+          type: string
+          format: date-time
+          nullable: true
         review_due_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Review Due At
+          type: string
+          format: date-time
+          nullable: true
         fingerprint:
           type: string
           title: Fingerprint
@@ -2171,9 +2146,8 @@ components:
         kind:
           $ref: '#/components/schemas/NodeKind'
         state:
-          anyOf:
-          - $ref: '#/components/schemas/TerminalState'
-          - type: 'null'
+          $ref: '#/components/schemas/TerminalState'
+          nullable: true
         choices:
           items:
             $ref: '#/components/schemas/Choice'
@@ -2207,11 +2181,10 @@ components:
           type: string
           title: Platform
         current_revision_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
           title: Current Revision Id
+          type: string
+          format: uuid
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -2260,10 +2233,9 @@ components:
           type: array
           title: Data
         next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Next Cursor
+          type: string
+          nullable: true
       additionalProperties: false
       type: object
       required:
@@ -2390,17 +2362,15 @@ components:
           - failed
           title: Result
         evidence_ref:
-          anyOf:
-          - type: string
-            maxLength: 500
-          - type: 'null'
           title: Evidence Ref
+          type: string
+          maxLength: 500
+          nullable: true
         notes:
-          anyOf:
-          - type: string
-            maxLength: 500
-          - type: 'null'
           title: Notes
+          type: string
+          maxLength: 500
+          nullable: true
         occurred_at:
           type: string
           format: date-time
@@ -2454,10 +2424,9 @@ components:
           type: array
           title: Data
         next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Next Cursor
+          type: string
+          nullable: true
       additionalProperties: false
       type: object
       required:
@@ -2485,21 +2454,18 @@ components:
           format: date-time
           title: Next Attempt At
         last_status_code:
-          anyOf:
-          - type: integer
-          - type: 'null'
           title: Last Status Code
+          type: integer
+          nullable: true
         last_error:
-          anyOf:
-          - type: string
-          - type: 'null'
           title: Last Error
+          type: string
+          nullable: true
         delivered_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
           title: Delivered At
+          type: string
+          format: date-time
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -2551,7 +2517,6 @@ components:
           type: array
           maxItems: 4
           minItems: 1
-          uniqueItems: true
           title: Event Types
       additionalProperties: false
       type: object
@@ -2648,26 +2613,23 @@ components:
           title: Code
           type: string
         instance:
-          anyOf:
-          - type: string
-          - type: 'null'
           default: null
           title: Instance
+          type: string
+          nullable: true
         request_id:
-          anyOf:
-          - type: string
-          - type: 'null'
           default: null
           title: Request Id
+          type: string
+          nullable: true
         errors:
-          anyOf:
-          - items:
-              additionalProperties: true
-              type: object
-            type: array
-          - type: 'null'
           default: null
           title: Errors
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          nullable: true
       required:
       - type
       - title

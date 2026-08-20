@@ -10,6 +10,7 @@
     "platform": "web"
   },
   "revision": 3,
+  "publication_state": "published",
   "status": "verified",
   "verified_at": "2026-08-20T14:30:00Z",
   "review_due_at": "2026-09-19T14:30:00Z",
@@ -117,7 +118,7 @@
   "evidence_summary": {
     "method": "manual_clean_session",
     "verification_sessions": 2,
-    "change_summary": "Initial planning fixture; not a real service route."
+    "change_summary": "Fictional example route; it does not describe a real service."
   },
-  "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  "fingerprint": "e051a6b98a6efa77b667ffb6c42f40f7971b676af92ba3aa566aaddba869774e"
 }

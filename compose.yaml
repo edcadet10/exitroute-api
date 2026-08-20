@@ -1,0 +1,90 @@
+name: exitroute
+
+x-app-environment: &app-environment
+  EXITROUTE_ENVIRONMENT: ${EXITROUTE_ENVIRONMENT:-development}
+  EXITROUTE_DATABASE_URL: ${EXITROUTE_DATABASE_URL:-postgresql+psycopg://exitroute:exitroute@database:5432/exitroute}
+  EXITROUTE_PUBLIC_BASE_URL: ${EXITROUTE_PUBLIC_BASE_URL:-http://localhost:8000}
+  EXITROUTE_BOOTSTRAP_ADMIN_ENABLED: ${EXITROUTE_BOOTSTRAP_ADMIN_ENABLED:-true}
+  EXITROUTE_BOOTSTRAP_ADMIN_TOKEN: ${EXITROUTE_BOOTSTRAP_ADMIN_TOKEN:-dev-bootstrap-token-change-me}
+  EXITROUTE_API_KEY_PEPPER: ${EXITROUTE_API_KEY_PEPPER:-dev-key-pepper-change-me-32-bytes}
+  EXITROUTE_CURSOR_SECRET: ${EXITROUTE_CURSOR_SECRET:-dev-cursor-secret-change-me-32-bytes}
+  EXITROUTE_WEBHOOK_MASTER_SECRET: ${EXITROUTE_WEBHOOK_MASTER_SECRET:-dev-webhook-secret-change-me-32-bytes}
+
+x-app-service: &app-service
+  image: exitroute-api:local
+  environment: *app-environment
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=16m,mode=1777
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  networks:
+    - backend
+    - edge
+
+services:
+  database:
+    image: postgres:16-alpine@sha256:d845e7f0ac8517b9d9868b6d20379f9688ba3676595e50ca7c0b664964b2a760
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-exitroute}
+      POSTGRES_USER: ${POSTGRES_USER:-exitroute}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-exitroute}
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    stop_grace_period: 30s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  migrate:
+    <<: *app-service
+    command: ["exitroute", "migrate"]
+    healthcheck:
+      disable: true
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - backend
+
+  api:
+    <<: *app-service
+    build:
+      context: .
+      target: runtime
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${EXITROUTE_PORT:-8000}:8000"
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  worker:
+    <<: *app-service
+    command: ["exitroute-worker", "run"]
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+volumes:
+  postgres-data:
+
+networks:
+  backend:
+    internal: true
+  edge:

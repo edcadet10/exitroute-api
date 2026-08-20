@@ -64,7 +64,7 @@ pilot dependency changes the order.
 
 ### ER-010: HTTP caching and conditional requests
 
-- Generate ETags from immutable revision fingerprints.
+- Generate ETags from the immutable fingerprint plus publication/trust status version.
 - Acceptance: unchanged conditional request returns `304` with no body.
 
 ### ER-011: Developer documentation and SDK example
@@ -92,7 +92,7 @@ pilot dependency changes the order.
 
 ### ER-015: Daily challenge projection
 
-- Project a verified route into a link-free, brand-safe playable graph.
+- Project a verified route into a link-free playable graph without service identity or evidence.
 - Acceptance: live URLs and private evidence never appear in the challenge payload;
   the reference client never presents effect annotations as hints.
 

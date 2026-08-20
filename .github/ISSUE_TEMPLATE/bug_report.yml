@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a reproducible problem without including personal or account data.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials, cookies, personal data, or private cancellation evidence.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include the expected behavior and the actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Use fictional or redacted values only.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: ExitRoute version or commit
+    validations:
+      required: true

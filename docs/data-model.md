@@ -1,122 +1,75 @@
-# Data model
+# Data model and invariants
 
-## Storage strategy
+Identity, filtering, workflow, and audit fields are relational. Each bounded
+route graph is a JSONB value attached to an immutable revision. This keeps
+publication atomic while retaining database constraints on the state envelope.
 
-Use relational columns for values that identify, filter, constrain, or audit a
-route. Use a JSONB document for the bounded node/choice graph belonging to a
-specific immutable revision.
+## Main records
 
-This avoids two bad extremes: an opaque document store with weak publication
-constraints, and many graph tables that make a revision difficult to copy,
-validate, fingerprint, and return atomically.
+- `services`: public slug/name, optional discovery domains, active flag.
+- `routes`: unique service/outcome/region/platform identity and current revision pointer.
+- `route_revisions`: graph content, derived route/friction/fingerprint, separate
+  publication and trust states, and verification/review timestamps.
+- `verification_events`: independent result, verifier, environment, time, and
+  private evidence reference; evidence is never copied into a public response.
+- `api_clients` and `api_keys`: quota owner, keyed credential digest, prefix,
+  scopes, expiry, use time, and revocation time.
+- `observations`: client-scoped idempotency key, canonical payload hash, bounded
+  report, and moderation state.
+- `change_events` and `audit_events`: append-only public and security histories.
+- `webhook_subscriptions` and `webhook_deliveries`: destination configuration,
+  derivation salt, immutable event payload, lease/retry state, and result metadata.
+- `rate_windows`: one atomic per-client/per-minute counter shared by all API replicas.
+- `challenge_assignments`: stable date-to-revision mapping so catalog changes do
+  not change a puzzle after it is first served.
 
-## Tables
+## Graph invariants
 
-### `services`
+Publication uses the pure domain validator and rejects a graph unless:
 
-| Column | Purpose |
+1. Node and choice IDs are globally unique inside the revision.
+2. The entry and every target exist; every node is reachable from the entry.
+3. Terminal kind and terminal state agree exactly, terminal nodes have no choices,
+   and nonterminal nodes have at least one choice.
+4. A `retain` choice ends at a retained terminal; an `advance` choice cannot do so.
+5. A `handoff` choice targets a handoff node.
+6. A `loop` label describes an actual cycle.
+7. A path excluding retain and loop edges reaches a cancelled terminal.
+8. Deterministic lowest-effort selection ends at cancellation; lexicographic choice
+   IDs break equal-cost ties.
+9. Recomputed friction and canonical SHA-256 fingerprint match server-derived values.
+
+Clients cannot provide `best_route`, `friction`, `algorithm_version`, or
+`fingerprint` when creating a draft.
+
+## State model
+
+Publication state and trust state answer different questions:
+
+| Publication | Meaning |
 |---|---|
-| `id` UUID | Stable internal identity |
-| `slug` text unique | Public identifier |
-| `name` text | Display name |
-| `domains` text[] | Exact domains used for discovery |
-| `active` boolean | Catalog state |
-| timestamps | Audit metadata |
+| `draft` | Editorial work; never public |
+| `published` | Current public candidate for its variant |
+| `superseded` | Immutable historical revision replaced by another |
+| `withdrawn` | Retained for audit but removed from normal public discovery |
 
-### `routes`
-
-One logical variant per service/outcome/region/platform.
-
-| Column | Purpose |
+| Trust | Meaning |
 |---|---|
-| `id` UUID | Stable route identity |
-| `service_id` UUID FK | Owning service |
-| `outcome` enum | Initially `cancel_subscription` |
-| `region` char(2) | ISO 3166-1 alpha-2 code |
-| `platform` enum | Initially `web`; model allows later variants |
-| `current_revision_id` UUID nullable | Published pointer maintained transactionally |
+| `provisional` | Not eligible for publication |
+| `verified` | Passed policy and still within its review window |
+| `stale` | Review window elapsed or an editor explicitly removed the verified label |
 
-Unique constraint: `(service_id, outcome, region, platform)`.
+Changing trust does not rewrite route content. `status_version` increments, so
+the representation ETag changes even when the content fingerprint does not.
 
-### `route_revisions`
+## Database enforcement
 
-| Column | Purpose |
-|---|---|
-| `id` UUID | Revision identity |
-| `route_id` UUID FK | Logical route |
-| `revision` integer | Monotonic route-local number |
-| `state` enum | `draft`, `verified`, `published`, `stale`, `withdrawn`, `superseded` |
-| `entry_url` text | Starting page; only on non-challenge representation |
-| `graph` JSONB | Nodes and choices |
-| `best_route` JSONB | Ordered choice IDs calculated at publication |
-| `friction` JSONB | Versioned metrics calculated at publication |
-| `algorithm_version` text | Reproducibility |
-| `fingerprint` text unique | Canonical payload digest |
-| verification/review timestamps | Freshness state |
-| actor/reason fields | Auditability |
+The first migration creates checks for valid state values, region/outcome,
+fingerprint shape, positive revisions/status versions, HTTPS entry URLs, and
+date ordering. A trigger rejects changes to content and verification timestamps
+after a revision leaves draft. Additional triggers reject update/delete on audit
+and change events.
 
-Unique constraint: `(route_id, revision)`. Published rows are append-only. A
-database trigger or restricted persistence API should reject in-place updates
-to immutable payload fields after publication.
-
-### `verification_events`
-
-Records each attempt independently, including result, environment description,
-evidence references, discrepancies, verifier identity, and timestamp. Evidence
-references are private metadata, never embedded in the public graph.
-
-### `observations`
-
-Structured reports from clients. Store service/variant, observed revision,
-semantic change type, bounded explanation, occurrence time, idempotency key,
-moderation state, and reporter client ID. An observation can create a draft but
-cannot publish.
-
-### `api_clients`, `webhook_subscriptions`, and `webhook_deliveries`
-
-Hold hashed API credentials, plans/quotas, signing-secret metadata, event
-subscriptions, delivery attempts, response codes, and retry state. Never log
-plaintext credentials or signing secrets.
-
-### `audit_events`
-
-Append-only record of security- and publication-relevant actions. Store actor,
-action, object identity, timestamp, request ID, and minimal structured context.
-
-## Graph document
-
-Every graph contains:
-
-- `entry_node_id`
-- An array of nodes with unique IDs
-- A node kind: `screen`, `os_settings`, `handoff`, or `terminal`
-- Optional terminal state: `cancelled`, `retained`, or `unavailable`
-- Choices with unique IDs, user-visible labels, target node IDs, effect, and effort
-
-Choice effects are `advance`, `loop`, `retain`, or `handoff`. A retention choice
-can be represented and rendered, but cannot appear in the recommended exit path.
-
-## Publication invariants
-
-A revision cannot be published unless all invariants hold:
-
-1. Entry node exists.
-2. Node IDs and choice IDs are unique.
-3. Every target resolves to a node in the same revision.
-4. At least one `cancelled` terminal is reachable from the entry.
-5. Terminal nodes have no choices.
-6. The best route ends at `cancelled` and includes no `retain` choice.
-7. Recomputing the path and friction with `algorithm_version` matches stored values.
-8. Region, platform, outcome, entry URL, and dates pass strict validation.
-9. Verification requirements and review date are satisfied.
-10. Canonical serialization matches the stored fingerprint.
-
-## Revision rules
-
-- Drafts may change.
-- Publishing creates or locks an immutable payload and atomically updates the
-  route's current pointer.
-- Superseding never deletes history.
-- Staleness changes the trust state, not historical contents.
-- Withdrawal removes a revision from normal discovery but retains the audit record.
-- Correcting a published typo produces a new revision.
+Application roles should still receive least-privilege database grants. These
+constraints are a final boundary, not a substitute for isolated credentials,
+encrypted backups, or access monitoring.
