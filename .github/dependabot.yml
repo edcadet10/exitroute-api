@@ -10,6 +10,9 @@ updates:
         dependency-type: production
       python-development:
         dependency-type: development
+    ignore:
+      - dependency-name: mypy
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -20,3 +23,6 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
