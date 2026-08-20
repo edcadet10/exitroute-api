@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" role="img" aria-label="ExitRoute — verified, versioned cancellation routes as a self-hosted API.">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b0e14"/>
+      <stop offset="1" stop-color="#11161f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.55" stop-color="#4ecca3"/>
+      <stop offset="1" stop-color="#f5b14e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.82" cy="0.20" r="0.65">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.08" cy="0.92" r="0.60">
+      <stop offset="0" stop-color="#4ecca3" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#4ecca3" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="320" fill="url(#bg)"/>
+  <rect width="1280" height="320" fill="url(#glow)"/>
+  <rect width="1280" height="320" fill="url(#glow2)"/>
+
+  <rect x="90" y="78" width="120" height="4" rx="2" fill="url(#accent)"/>
+
+  <text x="88" y="186" font-family="DejaVu Sans, Arial, sans-serif"
+        font-size="106" font-weight="700" fill="#4ecca3">ExitRoute</text>
+
+  <text x="94" y="236" font-family="DejaVu Sans, Arial, sans-serif"
+        font-size="30" font-weight="500" fill="#9aa4b2">verified paths through cancellation flows</text>
+
+  <text x="94" y="276" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        font-size="17" fill="#5b6573">self-hosted api &#183; versioned graphs &#183; no account automation</text>
+
+  <!-- motif: a decision graph whose safe branch reaches an open exit -->
+  <g transform="translate(1080,160)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle r="78" stroke="#222b38" stroke-width="3"/>
+    <path d="M-58,0 H-18 M-18,0 L20,-38 M-18,0 L20,36 H58" stroke="#2a3340" stroke-width="5"/>
+    <circle cx="-58" cy="0" r="8" fill="#22d3ee" stroke="#22d3ee"/>
+    <circle cx="-18" cy="0" r="8" fill="#4ecca3" stroke="#4ecca3"/>
+    <circle cx="20" cy="-38" r="8" fill="#f5b14e" stroke="#f5b14e" opacity="0.55"/>
+    <circle cx="20" cy="36" r="8" fill="#4ecca3" stroke="#4ecca3"/>
+    <path d="M58,18 V54 H82 V18" stroke="url(#accent)" stroke-width="5"/>
+    <path d="M48,36 H76 M67,27 L76,36 L67,45" stroke="#f5b14e" stroke-width="5"/>
+  </g>
+</svg>

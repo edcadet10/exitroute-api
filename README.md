@@ -1,16 +1,25 @@
-# ExitRoute API
+<p align="center">
+  <img src="assets/banner.svg" alt="ExitRoute — verified, versioned cancellation routes as a self-hosted API" width="100%">
+</p>
 
-ExitRoute is a self-hosted API for publishing factual, versioned routes through
-subscription-cancellation flows. It models each flow as a decision graph,
-computes the lowest-friction safe path, keeps immutable revision history, and
-offers a link-free daily puzzle generated from the same data.
+<p align="center">
+  <a href="https://github.com/edcadet10/exitroute-api/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/edcadet10/exitroute-api/ci.yml?branch=main&amp;style=flat-square&amp;label=CI" alt="CI status"></a>
+  <a href="https://github.com/edcadet10/exitroute-api/actions/workflows/codeql.yml"><img src="https://img.shields.io/github/actions/workflow/status/edcadet10/exitroute-api/codeql.yml?branch=main&amp;style=flat-square&amp;label=CodeQL" alt="CodeQL status"></a>
+  <a href="https://github.com/edcadet10/exitroute-api/releases/latest"><img src="https://img.shields.io/github/v/release/edcadet10/exitroute-api?style=flat-square&amp;color=4ecca3" alt="Latest release"></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.12-3776AB?style=flat-square&amp;logo=python&amp;logoColor=white" alt="Python 3.12"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-f5b14e?style=flat-square" alt="MIT license"></a>
+</p>
 
-The repository is an alpha that runs end to end. It contains no real-brand
-catalog and no personal data; the included seed is deliberately fictional.
+<p align="center"><b>Publish factual cancellation flows as API-ready decision graphs—with verification, history, webhooks, and a playable daily challenge.</b></p>
 
-## Run it
+---
 
-Requirements: Docker Engine with Compose v2.
+> [!IMPORTANT]
+> ExitRoute is an alpha data API, not a cancellation bot. It never signs in, clicks for a user, stores account credentials, or claims a cancellation succeeded. The bundled catalog is fictional.
+
+## Quick start
+
+You need Docker Engine with Compose v2.
 
 ```bash
 git clone https://github.com/edcadet10/exitroute-api.git
@@ -19,63 +28,69 @@ docker compose up --build --detach
 docker compose exec api exitroute seed-demo
 ```
 
-The last command prints a demo API key once. Use it in place of `$API_KEY`:
+The seed command prints an API key once. Copy it, then request the fictional route:
 
 ```bash
+export API_KEY='paste-the-printed-value'
 curl --header "X-API-Key: $API_KEY" \
   "http://localhost:8000/v1/services/demo-stream/exit-route?region=US&platform=web"
 ```
 
-- Interactive API docs: <http://localhost:8000/docs>
-- Liveness: <http://localhost:8000/healthz>
+- API explorer: <http://localhost:8000/docs>
 - Readiness: <http://localhost:8000/readyz>
 - Public daily challenge: <http://localhost:8000/v1/challenges/daily>
 
-The default Compose configuration binds only to `127.0.0.1` and uses known
-development secrets. It is not a production configuration. Follow
-[the self-hosting guide](docs/self-hosting.md) before exposing it to a network.
+The defaults bind the API to `127.0.0.1` and use known development secrets. Read the [self-hosting guide](docs/self-hosting.md) before exposing it to a network.
 
-## What is implemented
+## What it provides
 
-- Strict graph semantics, deterministic route selection, and versioned friction scoring
-- Separate publication (`draft`, `published`, `superseded`, `withdrawn`) and trust
-  (`provisional`, `verified`, `stale`) state machines
-- Two-independent-session publication gate and database-enforced immutable published content
-- Scoped, hashed API keys with rotation, revocation, expiration, and PostgreSQL-backed quotas
-- Signed opaque pagination cursors and state-aware ETags with conditional GET support
-- Structured, PII-filtered, idempotent observations that always enter moderation
-- Transactional webhook outbox, replica-safe leasing, TLS/DNS SSRF defenses, retry, and dead letters
-- Scheduled freshness enforcement and public, URL-free challenge projections
-- Alembic migrations, locked dependencies, non-root/read-only containers, and pinned CI actions
-- Generated OpenAPI 3.1 plus an OpenAPI 3.0 artifact for Cloudflare API Shield import
+| Capability | What it does |
+| --- | --- |
+| Route graphs | Versioned screens, choices, loops, offers, handoffs, and terminal states |
+| Analysis | Deterministic safe paths, friction scores, and graph fingerprints |
+| Editorial trust | Two independent verifications, immutable history, and explicit withdrawal |
+| Feedback | PII-filtered, idempotent observations that always enter moderation |
+| Delivery | Signed webhooks, transactional outbox, SSRF defenses, and bounded retry |
+| Daily puzzle | A public, link-free challenge derived from verified routes |
 
-## API shape
+```mermaid
+flowchart LR
+    O([Observation]) --> M[Moderation]
+    M --> D[Draft graph]
+    D --> V[Two clean-session<br/>verifications]
+    V --> P([Published revision])
+    P --> A[Read API]
+    P --> W[Signed webhooks]
+    P --> C[Daily challenge]
+
+    classDef input fill:#11161f,stroke:#22d3ee,color:#d9f7fb
+    classDef work fill:#11161f,stroke:#4ecca3,color:#d8f5e9
+    classDef publish fill:#0f2a22,stroke:#f5b14e,color:#fff0d7
+    class O input
+    class M,D,V,A,W,C work
+    class P publish
+```
+
+## API at a glance
 
 | Surface | Purpose | Authentication |
-|---|---|---|
-| `/v1/services`, exit routes, revisions, `/v1/changes` | Read the catalog and history | `routes:read` API key |
+| --- | --- | --- |
+| `/v1/services`, exit routes, revisions, `/v1/changes` | Catalog and immutable history | `routes:read` API key |
 | `/v1/observations` | Submit a bounded change report | `observations:write` API key |
 | `/v1/webhook-subscriptions` | Manage signed change delivery | `webhooks:manage` API key |
-| `/v1/challenges/daily` | Play a link-free route puzzle | Public |
-| `/admin/v1/*` | Editorial workflow and credential lifecycle | Admin key or development bootstrap token |
+| `/v1/challenges/daily` | Play the link-free route puzzle | Public |
+| `/admin/v1/*` | Editorial and credential lifecycle | Admin API key; bootstrap token in development only |
 
-See [openapi.yaml](openapi.yaml) for the canonical contract and
-[openapi.cloudflare.yaml](openapi.cloudflare.yaml) for the deliberately reduced
-OpenAPI 3.0 validation artifact.
+The canonical contract is [OpenAPI 3.1](openapi.yaml); a reduced [OpenAPI 3.0 artifact](openapi.cloudflare.yaml) supports Cloudflare API Shield.
 
-## Trust model
+## Safety and production
 
-ExitRoute is informational. It never logs in to a service, clicks on a user's
-behalf, receives account credentials, or claims a cancellation succeeded. Raw
-community observations cannot modify public data. Publishing requires a typed
-graph, two distinct successful verification sessions, a future review date,
-and an editor action. When that date passes, the worker and read path both stop
-describing the route as verified.
+- Public revisions contain interface semantics—not credentials, cookies, screenshots, or personal evidence.
+- Publication, trust, withdrawal, and freshness are database-enforced states.
+- Webhooks allow only vetted public HTTPS targets and preserve TLS hostname verification.
+- Self-hosters control their infrastructure and data; no real-brand catalog is included.
 
-Webhook destinations must be HTTPS on port 443 and resolve entirely to public
-addresses. Delivery pins the vetted address while retaining TLS hostname
-verification, follows no redirects, signs the exact body, and never logs the
-signing secret.
+Compose is a local starting point, not a public ingress. Before production, follow the [self-hosting checklist](docs/self-hosting.md) and [operations runbooks](docs/operations.md).
 
 ## Develop
 
@@ -85,32 +100,30 @@ Python 3.12 and [uv](https://docs.astral.sh/uv/) are required.
 uv sync --frozen --extra dev
 docker compose -f compose.yaml -f compose.test.yaml up --detach database
 export EXITROUTE_TEST_DATABASE_URL=postgresql+psycopg://exitroute:exitroute@localhost:55432/exitroute
+
 uv run pytest
 uv run ruff check .
+uv run ruff format --check .
 uv run mypy src tests
+uv run python scripts/export_openapi.py --check
 ```
 
-The suite uses a real PostgreSQL database for persistence, concurrency, trigger,
-and outbox behavior. Branch coverage must remain at or above 85%.
+Tests use real PostgreSQL and enforce at least 85% branch coverage.
 
-## Project map
+## Documentation
 
-- [docs/architecture.md](docs/architecture.md) — boundaries, request paths, and scaling triggers
-- [docs/data-model.md](docs/data-model.md) — relational model and invariants
-- [docs/verification-policy.md](docs/verification-policy.md) — evidence and moderation policy
-- [docs/self-hosting.md](docs/self-hosting.md) — production configuration and upgrades
-- [docs/operations.md](docs/operations.md) — reliability targets, backup, restore, and incident runbooks
-- [docs/webhooks.md](docs/webhooks.md) — signature verification, replay defense, and retries
-- [CONTRIBUTING.md](CONTRIBUTING.md) — development and review expectations
-- [SECURITY.md](SECURITY.md) — private vulnerability reporting
+| Guide | Use it for |
+| --- | --- |
+| [Architecture](docs/architecture.md) | Boundaries and scaling triggers |
+| [Data model](docs/data-model.md) | Tables and invariants |
+| [Verification](docs/verification-policy.md) | Evidence and publication policy |
+| [Self-hosting](docs/self-hosting.md) | Configuration, upgrades, and rollback |
+| [Operations](docs/operations.md) | Backups, alerts, and incidents |
+| [Webhooks](docs/webhooks.md) | Signatures, retries, and dead letters |
+| [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) | Development and disclosure |
 
-The earlier product validation work remains in [PLAN.md](PLAN.md),
-[BACKLOG.md](BACKLOG.md), and [docs/validation-plan.md](docs/validation-plan.md).
-Those documents distinguish engineering readiness from evidence of market demand.
+## Status and license
 
-## License
+[v0.1.0](https://github.com/edcadet10/exitroute-api/releases/tag/v0.1.0) is a tested alpha with fictional data. Catalog demand and real-route coverage remain unvalidated; see [PLAN.md](PLAN.md).
 
-[MIT](LICENSE). You may use, modify, and distribute the software. Route data you
-add remains your responsibility: confirm that you have the right to publish it,
-keep private evidence out of public payloads, and obtain legal advice for your
-jurisdiction and use case.
+[MIT](LICENSE). You may use, modify, and distribute the software. You remain responsible for the legality, accuracy, and publication rights of route data you add.
