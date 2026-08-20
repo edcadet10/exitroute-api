@@ -1,0 +1,123 @@
+{
+  "id": "9df4c148-3d18-472d-8d92-c0e7837c8a25",
+  "service": {
+    "slug": "example-stream",
+    "name": "Example Stream"
+  },
+  "outcome": "cancel_subscription",
+  "variant": {
+    "region": "US",
+    "platform": "web"
+  },
+  "revision": 3,
+  "status": "verified",
+  "verified_at": "2026-08-20T14:30:00Z",
+  "review_due_at": "2026-09-19T14:30:00Z",
+  "entry_url": "https://example.com/account",
+  "graph": {
+    "entry_node_id": "account",
+    "nodes": [
+      {
+        "id": "account",
+        "kind": "screen",
+        "state": null,
+        "choices": [
+          {
+            "id": "manage",
+            "label": "Manage membership",
+            "target_node_id": "manage-plan",
+            "effect": "advance",
+            "effort": 1,
+            "prominence": "primary"
+          }
+        ]
+      },
+      {
+        "id": "manage-plan",
+        "kind": "screen",
+        "state": null,
+        "choices": [
+          {
+            "id": "continue",
+            "label": "Continue cancellation",
+            "target_node_id": "offer",
+            "effect": "advance",
+            "effort": 2,
+            "prominence": "subdued"
+          }
+        ]
+      },
+      {
+        "id": "offer",
+        "kind": "screen",
+        "state": null,
+        "choices": [
+          {
+            "id": "keep-membership",
+            "label": "Keep membership",
+            "target_node_id": "retained",
+            "effect": "retain",
+            "effort": 1,
+            "prominence": "primary"
+          },
+          {
+            "id": "decline-offer",
+            "label": "Decline offer",
+            "target_node_id": "confirm-screen",
+            "effect": "advance",
+            "effort": 2,
+            "prominence": "subdued"
+          }
+        ]
+      },
+      {
+        "id": "confirm-screen",
+        "kind": "screen",
+        "state": null,
+        "choices": [
+          {
+            "id": "confirm",
+            "label": "Confirm cancellation",
+            "target_node_id": "cancelled",
+            "effect": "advance",
+            "effort": 1,
+            "prominence": "ambiguous"
+          }
+        ]
+      },
+      {
+        "id": "retained",
+        "kind": "terminal",
+        "state": "retained",
+        "choices": []
+      },
+      {
+        "id": "cancelled",
+        "kind": "terminal",
+        "state": "cancelled",
+        "choices": []
+      }
+    ]
+  },
+  "best_route": [
+    "manage",
+    "continue",
+    "decline-offer",
+    "confirm"
+  ],
+  "friction": {
+    "screens": 4,
+    "retention_offers": 1,
+    "loops": 0,
+    "offline_handoff": false,
+    "effort_score": 7,
+    "algorithm_version": "friction-v1"
+  },
+  "confidence": "high",
+  "evidence_summary": {
+    "method": "manual_clean_session",
+    "verification_sessions": 2,
+    "change_summary": "Initial planning fixture; not a real service route."
+  },
+  "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}
