@@ -1,5 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
+  - name: Design question or open-ended idea
+    url: https://github.com/edcadet10/exitroute-api/discussions
+    about: Start a discussion before proposing a broad API, data-model, or architecture change.
   - name: Security vulnerability
     url: https://github.com/edcadet10/exitroute-api/security/advisories/new
     about: Report vulnerabilities privately; do not open a public issue.

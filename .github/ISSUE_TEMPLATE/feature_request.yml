@@ -1,0 +1,50 @@
+name: Feature request
+description: Propose a reusable, provider-neutral improvement to ExitRoute.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: For broad design changes, start a Discussion first. Never include credentials, personal data, or private cancellation evidence.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What reusable self-hosting or API need is not met today?
+      placeholder: Describe the problem without prescribing a solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed outcome
+      description: Describe the observable behavior and who benefits.
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Primary surface
+      options:
+        - Public API or OpenAPI contract
+        - Editorial workflow or verification
+        - Persistence or migrations
+        - Webhooks or worker
+        - Operations or self-hosting
+        - Documentation or developer experience
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Note simpler workarounds or why existing behavior is insufficient.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and discussions for this proposal.
+          required: true
+        - label: This proposal does not require ExitRoute to access consumer accounts or store personal evidence.
+          required: true

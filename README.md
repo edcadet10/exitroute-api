@@ -8,6 +8,7 @@
   <a href="https://github.com/edcadet10/exitroute-api/releases/latest"><img src="https://img.shields.io/github/v/release/edcadet10/exitroute-api?style=flat-square&amp;color=4ecca3" alt="Latest release"></a>
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.12-3776AB?style=flat-square&amp;logo=python&amp;logoColor=white" alt="Python 3.12"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-f5b14e?style=flat-square" alt="MIT license"></a>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-22d3ee?style=flat-square" alt="Contributions welcome"></a>
 </p>
 
 <p align="center"><b>Publish factual cancellation flows as API-ready decision graphs—with verification, history, webhooks, and a playable daily challenge.</b></p>
@@ -110,6 +111,10 @@ uv run python scripts/export_openapi.py --check
 
 Tests use real PostgreSQL and enforce at least 85% branch coverage.
 
+## Contributing
+
+Contributions are welcome. Read the [guide](CONTRIBUTING.md), open an [issue](https://github.com/edcadet10/exitroute-api/issues/new/choose), or discuss broad changes in [Discussions](https://github.com/edcadet10/exitroute-api/discussions). Report vulnerabilities [privately](https://github.com/edcadet10/exitroute-api/security/advisories/new). Participation follows our [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Documentation
 
 | Guide | Use it for |
@@ -120,7 +125,6 @@ Tests use real PostgreSQL and enforce at least 85% branch coverage.
 | [Self-hosting](docs/self-hosting.md) | Configuration, upgrades, and rollback |
 | [Operations](docs/operations.md) | Backups, alerts, and incidents |
 | [Webhooks](docs/webhooks.md) | Signatures, retries, and dead letters |
-| [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) | Development and disclosure |
 
 ## Status and license
 
